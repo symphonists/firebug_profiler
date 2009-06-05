@@ -11,3 +11,7 @@
 2. Enable it by selecting "Firebug Profiler" in the list and choose Enable from the with-selected menu, then click Apply.
 3. Download and install FirePHP for Firebug <https://addons.mozilla.org/en-US/firefox/addon/6149>
 4. Refresh a frontend page and view the Firebug console for profile goodness!
+
+## Example
+
+![Firebug console](http://nick-dunn.co.uk/assets/files/symphony.firebug-profiler.png)
