@@ -50,36 +50,56 @@
 		Delegates:
 	-------------------------------------------------------------------------*/
 		
+		public function FrontendOutputPreGenerate($context) {
+			$this->xml = $context['xml'];
+		}
+	
 		public function frontendOutputPostGenerate($context) {
-			
+		
 			// don't output anything for unauthenticated users
 			if (!Frontend::instance()->isLoggedIn()) return;
-			
+		
 			require_once(EXTENSIONS . '/firebug_profiler/lib/FirePHPCore/FirePHP.class.php');
 			$firephp = FirePHP::getInstance(true);
-			
+		
+			$xml = simplexml_load_string($this->xml);
+		
+			$xml_events = $xml->xpath('/data/events/*');
+			$firephp->group('Events', array('Collapsed' => true));
+			foreach($xml_events as $event) {
+				$firephp->log($event->asXML(), $event->getName());
+			}
+			$firephp->groupEnd();
+		
+			$xml_datasources = $xml->xpath('/data/*[name() != "events"]');
+			$firephp->group('Data Sources', array('Collapsed' => true));
+			foreach($xml_datasources as $ds) {
+				$firephp->log($ds->asXML(), $ds->getName());
+			}
+			$firephp->groupEnd();
+		
 			$firephp->group('Profile', array('Collapsed' => true));
-			
+		
 				$firephp->group('General', array('Collapsed' => false));
 				foreach(Frontend::instance()->Profiler->retrieveGroup('General') as $profile) {
 					$firephp->log($profile[1], $profile[0]);
 				}
 				$firephp->groupEnd();
-				
+			
 				$firephp->group('Data Sources', array('Collapsed' => false));
 				foreach(Frontend::instance()->Profiler->retrieveGroup('Datasource') as $profile) {
 					$firephp->log($profile[1], $profile[0]);
 				}
 				$firephp->groupEnd();
-				
+			
 				$firephp->group('Events', array('Collapsed' => false));
 				foreach(Frontend::instance()->Profiler->retrieveGroup('Events') as $profile) {
 					$firephp->log($profile[1], $profile[0]);
 				}
 				$firephp->groupEnd();
-			
+		
 			$firephp->groupEnd();
-			
+		
 			// Page Params comes last as it seems to break FirePHP headers above it
 			$firephp->group('Page Parameters', array('Collapsed' => true));
 			foreach($this->params as $name => $value) {
@@ -87,10 +107,9 @@
 				$firephp->log(trim($value), $name);
 			}
 			$firephp->groupEnd();
-			
-					
+				
 		}
-		
+	
 		public function frontendParamsResolve($context) {
 			$this->params = $context['params'];
 		}
