@@ -23,6 +23,25 @@
 		
 		public function getSubscribedDelegates() {
 			return array(
+			
+				array(
+					'page' => '/system/preferences/',
+					'delegate' => 'AddCustomPreferenceFieldsets',
+					'callback' => 'appendPreferences'
+				),
+				
+				array(
+					'page' => '/system/preferences/',
+					'delegate' => 'Save',
+					'callback' => 'savePreferences'
+				),							
+				
+				array(
+					'page' => '/system/preferences/',
+					'delegate' => 'CustomActions',
+					'callback' => 'toggleFirebugProfiler'
+				),
+			
 				array(
 					'page'		=> '/frontend/',
 					'delegate'	=> 'FrontendOutputPreGenerate',
@@ -46,6 +65,43 @@
 			);
 		}
 		
+		public function appendPreferences($context){
+
+			$group = new XMLElement('fieldset');
+			$group->setAttribute('class', 'settings');
+			$group->appendChild(new XMLElement('legend', 'Firebug Profiler'));			
+			
+			$label = Widget::Label();
+			$input = Widget::Input('settings[firebug_profiler][enabled]', 'yes', 'checkbox');
+			if($this->_Parent->Configuration->get('enabled', 'firebug_profiler') == 'yes') $input->setAttribute('checked', 'checked');
+			$label->setValue($input->generate() . ' Send debug and profile headers on page requests');
+			$group->appendChild($label);
+						
+			$group->appendChild(new XMLElement('p', 'When you are logged in, Firebug Profiler will send Debug and Profile headers that can be read with Firebug with each frontend page request.', array('class' => 'help')));
+									
+			$context['wrapper']->appendChild($group);
+						
+		}
+		
+		public function savePreferences($context){
+			if(!is_array($context['settings'])) $context['settings'] = array('firebug_profiler' => array('enabled' => 'no'));
+			
+			elseif(!isset($context['settings']['firebug_profiler'])){
+				$context['settings']['firebug_profiler'] = array('enabled' => 'no');
+			}		
+		}
+				
+		public function toggleFirebugProfiler($context){
+			
+			if($_REQUEST['action'] == 'toggle-firebug-profiler'){			
+				$value = ($this->_Parent->Configuration->get('enabled', 'firebug_profiler') == 'no' ? 'yes' : 'no');					
+				$this->_Parent->Configuration->set('enabled', $value, 'firebug_profiler');
+				$this->_Parent->saveConfig();
+				redirect((isset($_REQUEST['redirect']) ? URL . '/symphony' . $_REQUEST['redirect'] : $this->_Parent->getCurrentPageURL() . '/'));
+			}
+			
+		}
+		
 	/*-------------------------------------------------------------------------
 		Delegates:
 	-------------------------------------------------------------------------*/
@@ -55,57 +111,82 @@
 		}
 	
 		public function frontendOutputPostGenerate($context) {
-		
-			// don't output anything for unauthenticated users
-			if (!Frontend::instance()->isLoggedIn()) return;
+
+			// don't output anything for unauthenticated users or if profiler is disabled
+			if (!Frontend::instance()->isLoggedIn() || $this->_Parent->Configuration->get('enabled', 'firebug_profiler') == 'no') return;
 		
 			require_once(EXTENSIONS . '/firebug_profiler/lib/FirePHPCore/FirePHP.class.php');
 			$firephp = FirePHP::getInstance(true);
 		
-			$xml = simplexml_load_string($this->xml);
-		
-			$xml_events = $xml->xpath('/data/events/*');
-			$firephp->group('Events', array('Collapsed' => true));
-			foreach($xml_events as $event) {
-				$firephp->log($event->asXML(), $event->getName());
-			}
-			$firephp->groupEnd();
-		
-			$xml_datasources = $xml->xpath('/data/*[name() != "events"]');
-			$firephp->group('Data Sources', array('Collapsed' => true));
-			foreach($xml_datasources as $ds) {
-				$firephp->log($ds->asXML(), $ds->getName());
-			}
-			$firephp->groupEnd();
-		
-			$firephp->group('Profile', array('Collapsed' => true));
-		
-				$firephp->group('General', array('Collapsed' => false));
+			// Profile group
+			$firephp->group('Profile', array('Collapsed' => false));
+			
+				$table = array();
+				$table[] = array('Task', 'Time');
 				foreach(Frontend::instance()->Profiler->retrieveGroup('General') as $profile) {
-					$firephp->log($profile[1], $profile[0]);
+					$table[] = array($profile[0], $profile[1] . 's');
 				}
-				$firephp->groupEnd();
+				$firephp->table('General', $table);
 			
-				$firephp->group('Data Sources', array('Collapsed' => false));
-				foreach(Frontend::instance()->Profiler->retrieveGroup('Datasource') as $profile) {
-					$firephp->log($profile[1], $profile[0]);
-				}
-				$firephp->groupEnd();
+				$datasources = Frontend::instance()->Profiler->retrieveGroup('Datasource');
+				if (count($datasources) > 0) {
+					$table = array();
+					$table[] = array('Data Source', 'Time', 'Queries');
+					foreach(Frontend::instance()->Profiler->retrieveGroup('Datasource') as $profile) {
+						$table[] = array($profile[0], $profile[1] . 's', $profile[4]);
+					}
+					$firephp->table('Data Sources', $table);
+				}			
 			
-				$firephp->group('Events', array('Collapsed' => false));
-				foreach(Frontend::instance()->Profiler->retrieveGroup('Events') as $profile) {
-					$firephp->log($profile[1], $profile[0]);
-				}
-				$firephp->groupEnd();
+				$events = Frontend::instance()->Profiler->retrieveGroup('Event');
+			
+				if (count($events) > 0) {
+					$table = array();
+					$table[] = array('Event', 'Time', 'Queries');
+					foreach(Frontend::instance()->Profiler->retrieveGroup('Event') as $profile) {
+						$table[] = array($profile[0], $profile[1] . 's', $profile[4]);
+					}
+					$firephp->table('Events', $table);
+				}				
 		
 			$firephp->groupEnd();
 		
-			// Page Params comes last as it seems to break FirePHP headers above it
-			$firephp->group('Page Parameters', array('Collapsed' => true));
-			foreach($this->params as $name => $value) {
-				if ($name == 'root') continue;
-				$firephp->log(trim($value), $name);
-			}
+			// Debug group
+			
+			$xml = simplexml_load_string($this->xml);
+
+			$firephp->group('Debug', array('Collapsed' => false));
+			
+				$table = array();
+				$table[] = array('Data Source', 'XML');		
+				$xml_events = $xml->xpath('/data/events/*');
+				if (count($xml_events) > 0) {
+					foreach($xml_events as $event) {
+						$table[] = array($event->getName(), $event->asXML());
+					}
+					$firephp->table('Events', $table);
+				}				
+			
+				$table = array();
+				$table[] = array('Data Source', 'XML');		
+				$xml_datasources = $xml->xpath('/data/*[name() != "events"]');
+				if (count($xml_datasources) > 0) {
+					foreach($xml_datasources as $ds) {
+						$table[] = array($ds->getName(), $ds->asXML());
+					}
+					$firephp->table('Data Sources', $table);
+				}
+				
+				$param_table = array();
+				$param_table[] = array('Parameter', 'Value');
+
+				foreach($this->params as $name => $value) {
+					if ($name == 'root') continue;
+					$param_table[] = array('$' . trim($name), ($value == null) ? '' : $value);
+				}
+
+				$firephp->table('Page Parameters', $param_table);
+				
 			$firephp->groupEnd();
 				
 		}
@@ -115,5 +196,3 @@
 		}
 		
 	}
-	
-?>
