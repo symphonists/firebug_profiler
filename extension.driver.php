@@ -10,14 +10,14 @@
 		public function about() {
 			return array(
 				'name'			=> 'Firebug Profiler',
-				'version'		=> '0.01',
-				'release-date'	=> '2009-05-25',
+				'version'		=> '1.0',
+				'release-date'	=> '2009-05-05',
 				'author'		=> array(
 					'name'			=> 'Nick Dunn',
 					'website'		=> 'http://airlock.com',
 					'email'			=> 'nick.dunn@airlock.com'
 				),
-				'description'	=> 'Bastardise the backend.'
+				'description'	=> 'View Symphony profile and debug information in Firebug.'
 			);
 		}
 		
