@@ -1,6 +1,6 @@
 # Firebug Profiler
 
-* Version: 1.0
+* Version: 1.1
 * Author: Nick Dunn <http://github.com/nickdunn/>
 * Build Date: 2009-05-05
 * Requirements: Symphony 2.0.2

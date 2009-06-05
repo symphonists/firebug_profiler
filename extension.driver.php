@@ -10,7 +10,7 @@
 		public function about() {
 			return array(
 				'name'			=> 'Firebug Profiler',
-				'version'		=> '1.0',
+				'version'		=> '1.1',
 				'release-date'	=> '2009-05-05',
 				'author'		=> array(
 					'name'			=> 'Nick Dunn',
@@ -117,33 +117,56 @@
 		
 			require_once(EXTENSIONS . '/firebug_profiler/lib/FirePHPCore/FirePHP.class.php');
 			$firephp = FirePHP::getInstance(true);
-		
+			
+			$events = Frontend::instance()->Profiler->retrieveGroup('Event');
+			$datasources = Frontend::instance()->Profiler->retrieveGroup('Datasource');
+			
+			$xml_generation = Frontend::instance()->Profiler->retrieveByMessage('XML Generation');
+			
+			$dbstats = Frontend::instance()->Database->getStatistics();
+			
 			// Profile group
 			$firephp->group('Profile', array('Collapsed' => false));
-			
+				
 				$table = array();
 				$table[] = array('Task', 'Time');
 				foreach(Frontend::instance()->Profiler->retrieveGroup('General') as $profile) {
 					$table[] = array($profile[0], $profile[1] . 's');
 				}
-				$firephp->table('General', $table);
+				$firephp->table('Page Building', $table);
+				
+				$event_total = 0;
+				foreach($events as $r) $event_total += $r[1];
+
+				$ds_total = 0;
+				foreach($datasources as $r) $ds_total += $r[1];
+				
+				$table = array();
+				$table[] = array('Task', 'Time');
+				$table[] = array(__('Total Database Queries'), $dbstats['queries']);
+				$table[] = array(__('Slow Queries (> 0.09s)'), count($dbstats['slow-queries']));
+				$table[] = array(__('Total Time Spent on Queries'), $dbstats['total-query-time']);
+				$table[] = array(__('Time Triggering All Events'), $event_total);
+				$table[] = array(__('Time Running All Data Sources'), $ds_total);
+				$table[] = array(__('XML Generation Function'), $xml_generation[1]);
+				// $table[] = array(__('XSLT Generation'), $xsl_transformation[1]); not available for this delegate
+				$table[] = array(__('Output Creation Time'), Frontend::instance()->Profiler->retrieveTotalRunningTime());
+				$firephp->table('Page Output', $table);
+				
 			
-				$datasources = Frontend::instance()->Profiler->retrieveGroup('Datasource');
 				if (count($datasources) > 0) {
 					$table = array();
 					$table[] = array('Data Source', 'Time', 'Queries');
-					foreach(Frontend::instance()->Profiler->retrieveGroup('Datasource') as $profile) {
+					foreach($datasources as $profile) {
 						$table[] = array($profile[0], $profile[1] . 's', $profile[4]);
 					}
 					$firephp->table('Data Sources', $table);
 				}			
 			
-				$events = Frontend::instance()->Profiler->retrieveGroup('Event');
-			
 				if (count($events) > 0) {
 					$table = array();
 					$table[] = array('Event', 'Time', 'Queries');
-					foreach(Frontend::instance()->Profiler->retrieveGroup('Event') as $profile) {
+					foreach($events as $profile) {
 						$table[] = array($profile[0], $profile[1] . 's', $profile[4]);
 					}
 					$firephp->table('Events', $table);
@@ -168,11 +191,12 @@
 				}				
 			
 				$table = array();
-				$table[] = array('Data Source', 'XML');		
+				$table[] = array('Data Source', 'Entries', 'XML');		
 				$xml_datasources = $xml->xpath('/data/*[name() != "events"]');
 				if (count($xml_datasources) > 0) {
 					foreach($xml_datasources as $ds) {
-						$table[] = array($ds->getName(), $ds->asXML());
+						$entries = $ds->xpath('entry[@id]');
+						$table[] = array($ds->getName(), count($entries), $ds->asXML());
 					}
 					$firephp->table('Data Sources', $table);
 				}
