@@ -21,6 +21,11 @@
 			);
 		}
 		
+		public function install(){
+			$this->_Parent->Configuration->set('enabled', 'yes', 'firebug_profiler');
+			$this->_Parent->saveConfig();
+		}		
+		
 		public function getSubscribedDelegates() {
 			return array(
 			
@@ -74,10 +79,10 @@
 			$label = Widget::Label();
 			$input = Widget::Input('settings[firebug_profiler][enabled]', 'yes', 'checkbox');
 			if($this->_Parent->Configuration->get('enabled', 'firebug_profiler') == 'yes') $input->setAttribute('checked', 'checked');
-			$label->setValue($input->generate() . ' Send debug and profile headers on page requests');
+			$label->setValue($input->generate() . ' Send XML of each Data Source and Event');
 			$group->appendChild($label);
 						
-			$group->appendChild(new XMLElement('p', 'When you are logged in, Firebug Profiler will send Debug and Profile headers that can be read with Firebug with each frontend page request.', array('class' => 'help')));
+			$group->appendChild(new XMLElement('p', 'Enable this option to send the XML fragments for each Data Source and Event to the Firebug console. This can add several KB to each page request, depending on the XML size.', array('class' => 'help')));
 									
 			$context['wrapper']->appendChild($group);
 						
@@ -112,8 +117,8 @@
 	
 		public function frontendOutputPostGenerate($context) {
 
-			// don't output anything for unauthenticated users or if profiler is disabled
-			if (!Frontend::instance()->isLoggedIn() || $this->_Parent->Configuration->get('enabled', 'firebug_profiler') == 'no') return;
+			// don't output anything for unauthenticated users
+			if (!Frontend::instance()->isLoggedIn()) return;
 		
 			require_once(EXTENSIONS . '/firebug_profiler/lib/FirePHPCore/FirePHP.class.php');
 			$firephp = FirePHP::getInstance(true);
@@ -182,25 +187,29 @@
 
 			$firephp->group('Debug', array('Collapsed' => false));
 			
-				$table = array();
-				$table[] = array('Data Source', 'XML');		
-				$xml_events = $xml->xpath('/data/events/*');
-				if (count($xml_events) > 0) {
-					foreach($xml_events as $event) {
-						$table[] = array($event->getName(), $event->asXML());
+				if ($this->_Parent->Configuration->get('enabled', 'firebug_profiler') == 'yes') {
+				
+					$table = array();
+					$table[] = array('Event', 'XML');		
+					$xml_events = $xml->xpath('/data/events/*');
+					if (count($xml_events) > 0) {
+						foreach($xml_events as $event) {
+							$table[] = array($event->getName(), $event->asXML());
+						}
+						$firephp->table('Events (' . count($xml_events) .')', $table);
+					}				
+
+					$table = array();
+					$table[] = array('Data Source', 'Entries', 'XML');		
+					$xml_datasources = $xml->xpath('/data/*[name() != "events"]');
+					if (count($xml_datasources) > 0) {
+						foreach($xml_datasources as $ds) {
+							$entries = $ds->xpath('entry[@id]');
+							$table[] = array($ds->getName(), count($entries), $ds->asXML());
+						}
+						$firephp->table('Data Sources (' . count($xml_datasources) .')', $table);
 					}
-					$firephp->table('Events (' . count($xml_events) .')', $table);
-				}				
-			
-				$table = array();
-				$table[] = array('Data Source', 'Entries', 'XML');		
-				$xml_datasources = $xml->xpath('/data/*[name() != "events"]');
-				if (count($xml_datasources) > 0) {
-					foreach($xml_datasources as $ds) {
-						$entries = $ds->xpath('entry[@id]');
-						$table[] = array($ds->getName(), count($entries), $ds->asXML());
-					}
-					$firephp->table('Data Sources (' . count($xml_datasources) .')', $table);
+				
 				}
 				
 				$param_table = array();
