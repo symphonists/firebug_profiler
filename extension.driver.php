@@ -129,7 +129,7 @@
 			$firephp->group('Profile', array('Collapsed' => false));
 				
 				$table = array();
-				$table[] = array('Task', 'Time');
+				$table[] = array('', '');
 				foreach(Frontend::instance()->Profiler->retrieveGroup('General') as $profile) {
 					$table[] = array($profile[0], $profile[1] . 's');
 				}
@@ -142,13 +142,15 @@
 				foreach($datasources as $r) $ds_total += $r[1];
 				
 				$table = array();
-				$table[] = array('Task', 'Time');
+				$table[] = array('', '');
 				$table[] = array(__('Total Database Queries'), $dbstats['queries']);
-				$table[] = array(__('Slow Queries (> 0.09s)'), count($dbstats['slow-queries']));
-				$table[] = array(__('Total Time Spent on Queries'), $dbstats['total-query-time']);
-				$table[] = array(__('Time Triggering All Events'), $event_total);
-				$table[] = array(__('Time Running All Data Sources'), $ds_total);
-				$table[] = array(__('XML Generation Function'), $xml_generation[1]);
+				if (count($dbstats['slow-queries']) > 0) {
+					$table[] = array(__('Slow Queries (> 0.09s)'), count($dbstats['slow-queries']) . 's');
+				}
+				$table[] = array(__('Total Time Spent on Queries'), $dbstats['total-query-time'] . 's');
+				$table[] = array(__('Time Triggering All Events'), $event_total) . 's';
+				$table[] = array(__('Time Running All Data Sources'), $ds_total . 's');
+				$table[] = array(__('XML Generation Function'), $xml_generation[1] . 's');
 				// $table[] = array(__('XSLT Generation'), $xsl_transformation[1]); not available for this delegate
 				$table[] = array(__('Output Creation Time'), Frontend::instance()->Profiler->retrieveTotalRunningTime());
 				$firephp->table('Page Output', $table);
@@ -187,7 +189,7 @@
 					foreach($xml_events as $event) {
 						$table[] = array($event->getName(), $event->asXML());
 					}
-					$firephp->table('Events', $table);
+					$firephp->table('Events (' . count($xml_events) .')', $table);
 				}				
 			
 				$table = array();
@@ -198,7 +200,7 @@
 						$entries = $ds->xpath('entry[@id]');
 						$table[] = array($ds->getName(), count($entries), $ds->asXML());
 					}
-					$firephp->table('Data Sources', $table);
+					$firephp->table('Data Sources (' . count($xml_datasources) .')', $table);
 				}
 				
 				$param_table = array();
