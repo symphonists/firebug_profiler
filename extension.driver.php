@@ -128,7 +128,7 @@
 			require_once(EXTENSIONS . '/firebug_profiler/lib/FirePHPCore/FirePHP.class.php');
 			$firephp = FirePHP::getInstance(true);
 			
-			$events = Frontend::instance()->Profiler->retrieveGroup('Event');
+			$events = Frontend::instance()->Profiler->retrieveGroup('Events');
 			$datasources = Frontend::instance()->Profiler->retrieveGroup('Datasource');
 			
 			$xml_generation = Frontend::instance()->Profiler->retrieveByMessage('XML Generation');
@@ -165,7 +165,6 @@
 				$table[] = array(__('Output Creation Time'), Frontend::instance()->Profiler->retrieveTotalRunningTime());
 				$firephp->table('Page Output', $table);
 				
-			
 				if (count($datasources) > 0) {
 					$table = array();
 					$table[] = array('Data Source', 'Time', 'Queries');
@@ -174,7 +173,7 @@
 					}
 					$firephp->table('Data Sources', $table);
 				}			
-			
+
 				if (count($events) > 0) {
 					$table = array();
 					$table[] = array('Event', 'Time', 'Queries');
@@ -187,7 +186,6 @@
 			$firephp->groupEnd();
 		
 			// Debug group
-			
 			$xml = simplexml_load_string($this->xml);
 
 			$firephp->group('Debug', array('Collapsed' => false));
