@@ -66,6 +66,11 @@
 					'page'		=> '/frontend/',
 					'delegate'	=>	'FrontendParamsResolve',
 					'callback'	=>	'frontendParamsResolve'
+				),
+				array(
+					'page'		=> '/frontend/',
+					'delegate'	=>	'FrontendParamsPostResolve',
+					'callback'	=>	'frontendParamsPostResolve'
 				)
 			);
 		}
@@ -228,6 +233,10 @@
 	
 		public function frontendParamsResolve($context) {
 			$this->params = $context['params'];
+		}
+		
+		public function frontendParamsPostResolve($context) {
+			$this->params = array_merge($context['params'], $this->params);
 		}
 		
 	}
