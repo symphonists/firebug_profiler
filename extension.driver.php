@@ -162,8 +162,10 @@
 				$table[] = array(__('Time Running All Data Sources'), $ds_total . 's');
 				$table[] = array(__('XML Generation Function'), $xml_generation[1] . 's');
 				// $table[] = array(__('XSLT Generation'), $xsl_transformation[1]); not available for this delegate
-				$table[] = array(__('Output Creation Time'), Frontend::instance()->Profiler->retrieveTotalRunningTime());
-				$firephp->table('Page Output', $table);
+				
+				$total = Frontend::instance()->Profiler->retrieveTotalRunningTime();
+				$table[] = array(__('Output Creation Time'), $total);
+				$firephp->table('Page Output (' . $total . 's, ' . $dbstats['queries'] .' queries)', $table);
 				
 				if (count($datasources) > 0) {
 					$table = array();
