@@ -10,12 +10,11 @@
 		public function about() {
 			return array(
 				'name'			=> 'Firebug Profiler',
-				'version'		=> '1.1',
-				'release-date'	=> '2009-05-05',
+				'version'		=> '1.2',
+				'release-date'	=> '2010-01-06',
 				'author'		=> array(
 					'name'			=> 'Nick Dunn',
-					'website'		=> 'http://airlock.com',
-					'email'			=> 'nick.dunn@airlock.com'
+					'website'		=> 'http://airlock.com'
 				),
 				'description'	=> 'View Symphony profile and debug information in Firebug.'
 			);
@@ -116,12 +115,11 @@
 		Delegates:
 	-------------------------------------------------------------------------*/
 		
-		public function FrontendOutputPreGenerate($context) {
+		public function frontendOutputPreGenerate($context) {
 			$this->xml = $context['xml'];
 		}
 	
 		public function frontendOutputPostGenerate($context) {
-
 			// don't output anything for unauthenticated users
 			if (!Frontend::instance()->isLoggedIn()) return;
 		
@@ -165,7 +163,8 @@
 				
 				$total = Frontend::instance()->Profiler->retrieveTotalRunningTime();
 				$table[] = array(__('Output Creation Time'), $total);
-				$firephp->table('Page Output (' . $total . 's, ' . $dbstats['queries'] .' queries)', $table);
+				$table[] = array(__('Total Memory Usage'), General::formatFilesize(Frontend::instance()->Profiler->retrieveTotalMemoryUsage()));
+				$firephp->table('Page Output (' . $total . 's, ' . $dbstats['queries'] .' queries, ' . General::formatFilesize(Frontend::instance()->Profiler->retrieveTotalMemoryUsage()) . ')', $table);
 				
 				if (count($datasources) > 0) {
 					$table = array();
