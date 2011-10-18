@@ -1,10 +1,5 @@
 # Firebug Profiler
 
-* Version: 1.2
-* Author: Nick Dunn <http://github.com/nickdunn/>
-* Build Date: 2010-01-06
-* Requirements: Symphony 2.0.7
-
 ## Installation
 
 1. Download and upload the 'firebug_profiler' folder to your Symphony 'extensions' folder.
