@@ -2,12 +2,15 @@
 <extension id="firebug_profiler">
 	<name>Firebug Profiler</name>
 	<description>Debug and profile your pages using Firebug</description>
-	<repo type="github">https://github.com/nickdunn/firebug_profiler</repo>
+	<repo type="github">https://github.com/nimphonistsdunn/firebug_profiler</repo>
 	<url type="discuss">http://symphony-cms.com/discuss/thread/22544/</url>
 	<types>
 		<type>Other</type>
 	</types>
 	<authors>
+		<author>
+			<name github="symphonists" symphony="community">Symphony Community</name>
+		</author>
 		<author>
 			<name github="nickdunn" symphony="nickdunn">Nick Dunn</name>
 			<website>http://nick-dunn.co.uk</website>
